@@ -8,31 +8,47 @@ public class Server implements Runnable{
     public static List<File> fileList = new ArrayList<File>();
 	private int sPort ; //The server will be listening on this port number
 	protected ServerSocket listener;
-	private boolean stopped = false;
+	
+	protected boolean stopped = false;
 	protected static int[][] neighbours = new int[5][2]; 
 	protected static int chunkCounter;
 	protected static String name;  //name of the file
+	//protected static final int SO_TIMEOUT = 23; 
+	protected Thread runningThread ;
 	
 	private Server(int port)	{
 		this.sPort = port;
+		this.runningThread= Thread.currentThread();
 	}
 	
 	private void openServerSocket() {
 		try {
 			this.listener = new ServerSocket(this.sPort);
+			this.listener.setSoTimeout(20000);
 		} catch (IOException e){
 			throw new RuntimeException("server cannnot be initiated", e);
 		}
 	
 	}	
 	
-	public synchronized void stop(){
+	public synchronized void stop() {
         this.stopped = true;
-        try {
-            this.listener.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Error closing server", e);
-        }
+//        try {
+//			Thread.sleep(3*10000);
+//		} catch (InterruptedException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+//        try {
+//        	if(this.listener != null && !this.listener.isClosed()){
+//                this.listener.close();
+//                }
+//            } catch (IOException e) {
+//            	e.printStackTrace(System.err);
+//               // throw new RuntimeException("Error closing server", e);
+//            }
+//        this.runningThread.interrupt(); 
+        
 	}  
 	
 	
@@ -52,22 +68,30 @@ public class Server implements Runnable{
 			     
 	    	try {
 	        		while(!stopped) {
+	        			System.out.println("stopped vale:" + stopped);
 	            		try {
 							new Handler(listener.accept(),clientNum).start();
-						} catch (IOException e) {
+							 System.out.println("Client "  + clientNum + " is connected!");
+							 clientNum++;
+						} catch (SocketTimeoutException  e ) {
 							// TODO Auto-generated catch block
-							e.printStackTrace();
+							System.out.println("Timed out after 20sec");
+						} catch (IOException e1){
+							e1.printStackTrace();
 						}
-				System.out.println("Client "  + clientNum + " is connected!");
-				clientNum++;
+
 	        			}
 	    	} finally {
-	        		try {
-						listener.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+	    		try {
+		        	if(this.listener != null && !this.listener.isClosed()){
+		                this.listener.close();
+		                }
+		            } catch (IOException e ) {
+		            	e.printStackTrace(System.err);
+		               // throw new RuntimeException("Error closing server", e);
+		            }
+	    		System.out.println("Server is closed");	
+					// listener.close();
 	    	}
 		}	
 	
@@ -93,12 +117,13 @@ public class Server implements Runnable{
 		 splitFile(file );
 		 readfile.close();
 		 
-		 new Thread(server).start();	 
+		   new Thread(server, "serverthread").start();
+				  
 		 
 		  // wait for the first chunks to be distributed to the clients
 		 try {
 //	            System.out.println("Sleeping...");
-	            Thread.sleep(30*10000);
+	            Thread.sleep(2*10000); //90 sec to  transfer data 
 //	            System.out.println("Done sleeping, no interrupt.");
 	        } catch (InterruptedException e) {
 //	            System.out.println("I was interrupted!");
@@ -109,6 +134,7 @@ public class Server implements Runnable{
 		 if (readfile != null ){
 			  readfile.close();
 		 }
+		// server.runningThread.join();
 		 
 		System.out.println("server is stopping");
 	     server.stop();
@@ -118,7 +144,8 @@ public class Server implements Runnable{
 	
 	public void createNeighbour() throws IOException{
 		
-		 File configFile = new File("config.txt");
+		// File configFile = new File("config.txt");
+	     File configFile = new File("src/config.txt"); // when using eclipse
 		 BufferedReader in = new BufferedReader(new FileReader(configFile));
 
 		 try{
@@ -129,8 +156,8 @@ public class Server implements Runnable{
 		            int clientPort = Integer.parseInt(nextLine[0]);
 		            int clientPortUn = Integer.parseInt(nextLine[1]);
 		            int clientPortDn = Integer.parseInt(nextLine[2]);
-		            neighbours[clientPort - 9001][0] = clientPortUn;
-		            neighbours[clientPort - 9001][1] = clientPortDn;
+		            neighbours[clientPort - 8001][0] = clientPortUn;
+		            neighbours[clientPort - 8001][1] = clientPortDn;
 		    }
 
 		}catch(Exception e){
@@ -229,18 +256,24 @@ public class Server implements Runnable{
 		}
 		finally{
 			//Close connections
+			
 			try{
 				if(in != null){
+					System.out.println("closing the in input stream");
 				in.close();
 				}
 				if(out != null){
+					System.out.println("closing the out output stream");
 				out.close();
 				}
 				if(connection != null){
+					System.out.println("closing the TCP sockets opened for clients");
 				connection.close();
 				}
+				
 			}
 			catch(IOException ioException){
+				System.out.println("Exception closing connection " + ioException.getMessage());
 				System.out.println("Disconnect with Client " + no);
 			}
 		}

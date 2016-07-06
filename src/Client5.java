@@ -6,35 +6,36 @@ import java.util.*;
 
 
 
-public class Client implements Runnable {
+public class Client5 implements Runnable {
 	private Socket requestSocket; // socket connect to the server
 	private ObjectOutputStream out; // stream write to the socket
 	private ObjectInputStream in; // stream read from the socket
-	
+	protected ServerSocket serverSocket;
 	private int serverPort;
 	private List<File> file = new ArrayList<File>();
 	private List<Integer> list = new ArrayList<Integer>();
 	private Map<File, Integer> map = new HashMap<File, Integer>();
 	protected int downloadNeighbour;
 	protected int uploadNeighbour; 
+	protected int i = 1;
 	protected int listsize;
 
-	public Client(int serverPort) {
+	public Client5(int serverPort) {
 		this.serverPort = serverPort;
 
 	}
 
-//	public void openPeerServerPort() {
-//		try {
-//			this.serverSocket = new ServerSocket(serverPort);
-////			this.serverSocket.setSoTimeout(4000);
-//			System.out.println("Server started at " + serverPort);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			throw new RuntimeException("Server not opened at :" + serverPort, e);
-//		}
-//
-//	}
+	public void openPeerServerPort() {
+		try {
+			this.serverSocket = new ServerSocket(serverPort);
+			this.serverSocket.setSoTimeout(20000);
+			System.out.println("Server started at " + serverPort);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			throw new RuntimeException("Server not opened at :" + serverPort, e);
+		}
+
+	}
 
 	public void connectDownloadNeighbour() throws InterruptedException {
 		while (true) {
@@ -56,7 +57,7 @@ public class Client implements Runnable {
 
 		this.getChunkServer();
 
-//		this.openPeerServerPort();
+		this.openPeerServerPort();
 
 		
 		
@@ -68,57 +69,34 @@ public class Client implements Runnable {
 //			e.printStackTrace();
 //		}
 	  try {
-		      Thread.sleep(10000-serverPort);
+		      Thread.sleep(10000);
 //		  	while(true) {
     			// accept the connection at user provided port no.
-//		  			try {
-		  			System.out.println("Intializing the uploadhander");
+		  			try {
+		  				System.out.println("Intializing the uploadhander");
 		  				
-		  				new Thread (new UploadHandler(serverPort)).start();;
+		  				new UploadHandler(serverSocket.accept(),serverPort).start();
 		  				
-//		  			} catch (SocketTimeoutException  e ) {
-//						// TODO Auto-generated catch block
-//						System.out.println("Timed out after 20sec");
-//		  			} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//		  				e.printStackTrace();
-//				}
-//    		
+		  			} catch (SocketTimeoutException  e ) {
+						// TODO Auto-generated catch block
+						System.out.println("Timed out after 20sec");
+		  			} catch (IOException e) {
+					// TODO Auto-generated catch block
+		  				e.printStackTrace();
+				}
+    		
 	    	   
 		  	
 	      try {
-       			System.out.println("second try block client's thread");
+       			System.out.println("inside the client's  thread");
        			this.connectDownloadNeighbour();
        			out = new ObjectOutputStream(requestSocket.getOutputStream());
        			out.flush();
        			in = new ObjectInputStream(requestSocket.getInputStream());
-       			// get the size of the list of chunks  download neighbor has 
-       			
-       			int size =  Integer.parseInt((String) in.readObject());
-       			
-       			List<Integer> dnList = new ArrayList<Integer>();
-       			//creating the list as of the download neighbor 
-       			
-       			for( int i =0 ; i < size ; i++){
-       				dnList.add(Integer.parseInt((String) in.readObject()));
-       			}
-       			
-       			List<Integer> reqList = new ArrayList<Integer>();
-       			
-       			for( int j : dnList ){
-       				if(map.get(j) == null){
-       					 reqList.add(j);
-       				}
-       			}
-       			
-       			sendMessage(""+reqList.size());
-       			sendList(reqList);
-       			
-       			
-       			
-//       			System.out.println((String) in.readObject());
-//       			System.out.println((String) in.readObject());
-       			
+
+       			System.out.println((String) in.readObject());
+       			System.out.println((String) in.readObject());
+
        		}catch (InterruptedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
@@ -129,7 +107,16 @@ public class Client implements Runnable {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     		}
+	    	   
+    	
+        		/*
+        		 * **** here is the tricky part when the UploadHandler is spawned
+        		 * parallel to it the following code will also run
+        		 * 
+        		 */
 
+        	 
+ 
 
    		
 	  } catch (InterruptedException e1) {
@@ -138,7 +125,7 @@ public class Client implements Runnable {
 	}
 	finally {
 		try {
-			//requestSocket.close();
+		    serverSocket.close();
 			in.close();
 			out.close();
 		} catch (IOException e) {
@@ -146,7 +133,7 @@ public class Client implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	  
+		
 }		
 
 
@@ -179,7 +166,7 @@ public class Client implements Runnable {
 				try {
 
 					input = new FileInputStream(f1);
-					//System.out.println("inside try block");
+					System.out.println("inside try block");
 					output = new FileOutputStream(f);
 					byte[] buf = new byte[102400];
 					int bytesRead = 0;
@@ -198,8 +185,6 @@ public class Client implements Runnable {
 				map.put(f, i);
 				file.add(f);
 				list.add(i);
-				System.out.println("list of the files received "+ file);
-				System.out.println("list of the chunks received "+ list);
 			}
 
 		} catch (ConnectException e) {
@@ -212,7 +197,6 @@ public class Client implements Runnable {
 			ioException.printStackTrace();
 		} finally {
 			// Close connections
-
 			try {
 				if (in != null) {
 					in.close();
@@ -222,7 +206,7 @@ public class Client implements Runnable {
 				}
 				if (requestSocket != null) {
 					requestSocket.close();
-					System.out.println("finally getchunk from server ended ");
+					System.out.println("finally ended ");
 				}
 			} catch (IOException ioException) {
 				ioException.printStackTrace();
@@ -231,31 +215,12 @@ public class Client implements Runnable {
 
 	}
 
-
-	//To send ArrayList to the outputStream 
-		public void sendList(List<Integer> list){
-				for(int j = 0; j < list.size(); j++){
-					sendMessage(""+list.get(j));
-				}
-			}
-
 	// send a message to the output stream
-	public void sendMessage(String msg) {
+	void sendMessage(String msg) {
 		try {
+			// stream write the message
 			out.writeObject(msg);
 			out.flush();
-			 System.out.println("Send message from client with PeerID ="+ serverPort +","+ msg +  "to server at : "+ downloadNeighbour );
-		} catch (IOException ioException) {
-			ioException.printStackTrace();
-		}
-	}
-	// send a file to the output stream
-	public void sendFile(File f) {
-		try {
-			out.writeObject(f);
-			out.flush();
-			// System.out.println("Send file " +fileList.indexOf(f)+ " to
-			// Client " + peerID);
 		} catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
@@ -263,12 +228,12 @@ public class Client implements Runnable {
 
 	// main method
 	public static void main(String args[]) throws NumberFormatException, ClassNotFoundException {
-		System.out.println("Please specify the port number for this client to listen :");
-		Scanner in = new Scanner(System.in);
-		int port = in.nextInt();
-		in.close();
+//		System.out.println("Please specify the port number for this client to listen :");
+//		Scanner in = new Scanner(System.in);
+//		int port = in.nextInt();
+//		in.close();
 
-		Client client = new Client(port);
+		Client5 client = new Client5(9005);
 		new Thread(client, "client0000").start();
 		
 		try {
@@ -287,46 +252,25 @@ public class Client implements Runnable {
 	 * get the file list.
 	 * 
 	 */
-	private class UploadHandler implements Runnable {
-		private ServerSocket serverSocket;  
+	private class UploadHandler extends Thread {
 		private Socket connection;
 		private ObjectInputStream in; // stream read from the socket
 		private ObjectOutputStream out; // stream write to the socket
 		private int peerID; // port no of client acting as server
 
-		public UploadHandler(int no) {
-//			this.connection = connection;
+		public UploadHandler(Socket connection, int no) {
+			this.connection = connection;
 			this.peerID = no;
 		}
 		
-		public void openPeerServerPort() {
-			try {
-				this.serverSocket = new ServerSocket(peerID);
-//				this.serverSocket.setSoTimeout(4000);
-				System.out.println("Server started at " + peerID);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				throw new RuntimeException("Server not opened at :" + peerID, e);
-			}
 
-		}
-		
 		
 		public void run() {
 
 			synchronized (this) {
 				Thread.currentThread();
 			}
-			
-			this.openPeerServerPort();
-			
-			try {
-				this.connection = serverSocket.accept();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			
+
 			try {
 				System.out.println("Handler called inside"+ this.peerID);
 				
@@ -334,25 +278,10 @@ public class Client implements Runnable {
 				out = new ObjectOutputStream(connection.getOutputStream());
 				out.flush();
 				in = new ObjectInputStream(connection.getInputStream());
-				
-				
-			try {
-				while(true){
-					sendMessage(""+list.size());
-					sendList(list); 
-					
-					int reqlsize = Integer.parseInt((String) in.readObject());
-					List<Integer> reqList = new ArrayList<Integer>(); 
-					
-					for( int i= 0; i < reqlsize ; i ++){
-						reqList.add(Integer.parseInt((String) in.readObject()));
-					}
-					 
-					
-//					sendMessage("Hi");
-//					sendMessage("I need to test it");
-					break;
-				   }
+				try {
+					sendMessage("Hi");
+					sendMessage("I need to test it");
+
 				} catch (Exception e) {
 					throw new RuntimeException("fileList is missing", e);
 				}
@@ -361,16 +290,6 @@ public class Client implements Runnable {
 			} finally {
 				// Close connections
 				try {
-					
-//					try {
-////			            System.out.println("Sleeping...");
-//			            Thread.sleep(6*1000); //6 sec to  transfer data 
-////			            System.out.println("Done sleeping, no interrupt.");
-//			        } catch (InterruptedException e) {
-////			            System.out.println("I was interrupted!");
-//			            e.printStackTrace();
-//			        }
-							
 					if (in != null) {
 						in.close();
 					}
@@ -384,15 +303,7 @@ public class Client implements Runnable {
 					System.out.println("Disconnect with Client " + peerID);
 				}
 			}
-			
 		}
-		
-		//To send ArrayList to the outputStream 
-			public void sendList(List<Integer> list){
-					for(int j = 0; j < list.size(); j++){
-						sendMessage(""+list.get(j));
-					}
-				}
 
 		// send a message to the output stream
 		public void sendMessage(String msg) {
@@ -404,7 +315,7 @@ public class Client implements Runnable {
 				ioException.printStackTrace();
 			}
 		}
-		// send a file to the output stream
+
 		public void sendFile(File f) {
 			try {
 				out.writeObject(f);
