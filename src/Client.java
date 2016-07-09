@@ -14,11 +14,11 @@ public class Client implements Runnable {
 	private int serverPort;
 	private List<File> file = new ArrayList<File>();
 	private List<Integer> list = new ArrayList<Integer>();
-	private Map<File, Integer> map = new HashMap<File, Integer>();
+	private Map< Integer, File> map = new HashMap<Integer,File>();
 	protected int downloadNeighbour;
 	protected int uploadNeighbour; 
 	protected int listsize;
-
+	protected String name;
 	public Client(int serverPort) {
 		this.serverPort = serverPort;
 
@@ -113,8 +113,33 @@ public class Client implements Runnable {
        			
        			sendMessage(""+reqList.size());
        			sendList(reqList);
+       			// Receive the chunks from download neighbour according to the reqList 
        			
-       			
+       			for(int i=0; i<reqList.size();i++){
+					
+       				File f1 = (File)in.readObject();
+
+					File f = new File("/Users/bishalgautam/Desktop/test/"+ (serverPort-8000) + "/" + name + "." + String.format("%03d", reqList.get(i)));
+					System.out.println(reqList.get(i)+"index"+ name);
+					InputStream input = null;
+					OutputStream output = null;
+					try {
+						input = new FileInputStream(f1);
+						output = new FileOutputStream(f); 
+						byte[] buf = new byte[102400];
+						int bytesRead;
+						while ((bytesRead = input.read(buf)) > 0) {
+							output.write(buf, 0, bytesRead);
+						}
+					} finally {
+						input.close();
+						output.close();
+					}
+					file.add(f);
+					System.out.println(file);
+					list.add(reqList.get(i));
+					map.put(reqList.get(i), f);
+				}
        			
 //       			System.out.println((String) in.readObject());
 //       			System.out.println((String) in.readObject());
@@ -168,7 +193,7 @@ public class Client implements Runnable {
 
 			int no = Integer.parseInt((String) in.readObject());
 			listsize = Integer.parseInt((String) in.readObject());
-			String name = (String) in.readObject();
+			 name = (String) in.readObject();
 
 			for (int i = no - 1; i < listsize; i = i + 5) {
 				File f1 = (File) in.readObject();
@@ -195,7 +220,7 @@ public class Client implements Runnable {
 						output.close();
 					}
 				}
-				map.put(f, i);
+				map.put(i,f);
 				file.add(f);
 				list.add(i);
 				System.out.println("list of the files received "+ file);
@@ -347,10 +372,14 @@ public class Client implements Runnable {
 					for( int i= 0; i < reqlsize ; i ++){
 						reqList.add(Integer.parseInt((String) in.readObject()));
 					}
-					 
+					
+					for(int j : reqList){
+						sendFile(map.get(j));
+					}
 					
 //					sendMessage("Hi");
 //					sendMessage("I need to test it");
+					
 					break;
 				   }
 				} catch (Exception e) {
@@ -409,7 +438,7 @@ public class Client implements Runnable {
 			try {
 				out.writeObject(f);
 				out.flush();
-				// System.out.println("Send file " +fileList.indexOf(f)+ " to
+				 System.out.println("Send file to "  );
 				// Client " + peerID);
 			} catch (IOException ioException) {
 				ioException.printStackTrace();
