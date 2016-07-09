@@ -19,6 +19,9 @@ public class Client implements Runnable {
 	protected int uploadNeighbour; 
 	protected int listsize;
 	protected String name;
+	protected boolean isStopped = false; 
+	
+	
 	public Client(int serverPort) {
 		this.serverPort = serverPort;
 
@@ -92,6 +95,8 @@ public class Client implements Runnable {
        			out = new ObjectOutputStream(requestSocket.getOutputStream());
        			out.flush();
        			in = new ObjectInputStream(requestSocket.getInputStream());
+       			
+       			while(!isStopped){
        			// get the size of the list of chunks  download neighbor has 
        			
        			int size =  Integer.parseInt((String) in.readObject());
@@ -113,7 +118,8 @@ public class Client implements Runnable {
        			
        			sendMessage(""+reqList.size());
        			sendList(reqList);
-       			// Receive the chunks from download neighbour according to the reqList 
+       			
+       			// Receive the chunks from download neighbor according to the reqList 
        			
        			for(int i=0; i<reqList.size();i++){
 					
@@ -140,10 +146,14 @@ public class Client implements Runnable {
 					list.add(reqList.get(i));
 					map.put(reqList.get(i), f);
 				}
-       			
+//       			break;
+       			if(list.size() == listsize){
+       					this.stop();
+       			}
+//       			 break;
 //       			System.out.println((String) in.readObject());
 //       			System.out.println((String) in.readObject());
-       			
+       			}	
        		}catch (InterruptedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
@@ -220,9 +230,9 @@ public class Client implements Runnable {
 						output.close();
 					}
 				}
-				map.put(i,f);
+				map.put(i+1,f);
 				file.add(f);
-				list.add(i);
+				list.add(i+1);
 				System.out.println("list of the files received "+ file);
 				System.out.println("list of the chunks received "+ list);
 			}
@@ -255,7 +265,21 @@ public class Client implements Runnable {
 		}
 
 	}
-
+	// stopping the download once all the chunks are downloaded
+	
+	public  synchronized void stop(){
+		this.isStopped = true;
+		
+		System.out.println("Download complete Starting to Merge the Files .......");
+		try{
+			this.MergeChunks();
+		}catch (IOException e){
+			e.printStackTrace();		
+		}
+		
+		
+	}
+	
 
 	//To send ArrayList to the outputStream 
 		public void sendList(List<Integer> list){
@@ -284,8 +308,34 @@ public class Client implements Runnable {
 		} catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
-	}
+		
 
+	}
+	
+	// merge the chunks to create a new file
+			public void MergeChunks() throws IOException{
+				
+				File f2 = new File("/Users/bishalgautam/Desktop/test/"+ (serverPort-8000) + "/" + name );
+				try{
+					FileOutputStream out = new FileOutputStream(f2,true);
+					FileInputStream in = null;
+					
+					for(int i=0; i< listsize; i++){	
+						int index = list.indexOf(i+1);
+						in = new FileInputStream(file.get(index));
+						byte[] B = new byte[(int)file.get(index).length()];
+						int b = in.read(B, 0,(int)file.get(index).length());
+						out.write(B);
+		                out.flush();
+						in.close();
+					}
+					out.close();
+				}catch(Exception e){
+					
+				}
+			}
+			
+			
 	// main method
 	public static void main(String args[]) throws NumberFormatException, ClassNotFoundException {
 		System.out.println("Please specify the port number for this client to listen :");
@@ -373,16 +423,18 @@ public class Client implements Runnable {
 						reqList.add(Integer.parseInt((String) in.readObject()));
 					}
 					
+					if(reqList.size() == 0){
+						break;
+					}
+					
 					for(int j : reqList){
 						sendFile(map.get(j));
 					}
-					
-//					sendMessage("Hi");
-//					sendMessage("I need to test it");
-					
-					break;
+									
 				   }
-				} catch (Exception e) {
+				} catch (EOFException e) {
+				   System.out.println("EOF is reached ");;
+				}	catch (Exception e) {
 					throw new RuntimeException("fileList is missing", e);
 				}
 			} catch (IOException ioException) {
