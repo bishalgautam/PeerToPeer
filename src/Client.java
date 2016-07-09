@@ -154,6 +154,8 @@ public class Client implements Runnable {
 //       			System.out.println((String) in.readObject());
 //       			System.out.println((String) in.readObject());
        			}	
+       		}catch (EOFException e) {
+				   System.out.println("EOF is reached ");
        		}catch (InterruptedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
@@ -413,6 +415,7 @@ public class Client implements Runnable {
 				
 			try {
 				while(true){
+					
 					sendMessage(""+list.size());
 					sendList(list); 
 					
@@ -422,18 +425,19 @@ public class Client implements Runnable {
 					for( int i= 0; i < reqlsize ; i ++){
 						reqList.add(Integer.parseInt((String) in.readObject()));
 					}
+				
+					for(int j : reqList){
+						sendFile(map.get(j));
+					}
 					
 					if(reqList.size() == 0){
 						break;
 					}
 					
-					for(int j : reqList){
-						sendFile(map.get(j));
-					}
-									
+					reqList.clear();			
 				   }
 				} catch (EOFException e) {
-				   System.out.println("EOF is reached ");;
+				   System.out.println("EOF is reached ");
 				}	catch (Exception e) {
 					throw new RuntimeException("fileList is missing", e);
 				}
