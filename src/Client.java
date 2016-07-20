@@ -20,6 +20,9 @@ public class Client implements Runnable {
 	protected int listsize;
 	protected String name;
 	protected boolean isStopped = false; 
+	protected Thread t;
+	protected boolean downloadcomplete = false;
+	protected boolean uploadcomplete = false;
 	
 	
 	public Client(int serverPort) {
@@ -48,7 +51,7 @@ public class Client implements Runnable {
 				System.out.println("Connected to downloadNeighbor" + downloadNeighbour);
 				break;
 			} catch (Exception e) {
-				Thread.sleep(2000);
+				Thread.sleep(1000);
 			}
 		}
 	}
@@ -70,6 +73,10 @@ public class Client implements Runnable {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+	
+	while( !this.downloadcomplete || !this.uploadcomplete ){
+		
+//	}
 	  try {
 		      Thread.sleep(10000-serverPort);
 //		  	while(true) {
@@ -77,7 +84,8 @@ public class Client implements Runnable {
 //		  			try {
 		  			System.out.println("Intializing the uploadhander");
 		  				
-		  				new Thread (new UploadHandler(serverPort)).start();;
+		  			t =	new Thread (new UploadHandler(serverPort));
+		  			    t.start();
 		  				
 //		  			} catch (SocketTimeoutException  e ) {
 //						// TODO Auto-generated catch block
@@ -87,7 +95,9 @@ public class Client implements Runnable {
 //		  				e.printStackTrace();
 //				}
 //    		
-	    	   
+	    	   if(this.downloadcomplete){
+	    		   continue;
+	    	   }
 		  	
 	      try {
        			System.out.println("second try block client's thread");
@@ -96,9 +106,10 @@ public class Client implements Runnable {
        			out.flush();
        			in = new ObjectInputStream(requestSocket.getInputStream());
        			
-       			while(!isStopped){
+ //      			while(!isStopped){
        			// get the size of the list of chunks  download neighbor has 
-       			
+      // 			if (in.available() > 0){
+       				// prevent the EOF 
        			int size =  Integer.parseInt((String) in.readObject());
        			
        			List<Integer> dnList = new ArrayList<Integer>();
@@ -119,6 +130,12 @@ public class Client implements Runnable {
        			sendMessage(""+reqList.size());
        			sendList(reqList);
        			
+//       			if(reqList.size() != 0){
+//       				sendList(reqList);	
+//       			}
+       			
+       			
+       			
        			// Receive the chunks from download neighbor according to the reqList 
        			
        			for(int i=0; i<reqList.size();i++){
@@ -126,7 +143,7 @@ public class Client implements Runnable {
        				File f1 = (File)in.readObject();
 
 					File f = new File("/Users/bishalgautam/Desktop/test/"+ (serverPort-8000) + "/" + name + "." + String.format("%03d", reqList.get(i)));
-					System.out.println(reqList.get(i)+"index"+ name);
+					System.out.println(reqList.get(i)+"th chunk received");
 					InputStream input = null;
 					OutputStream output = null;
 					try {
@@ -138,13 +155,20 @@ public class Client implements Runnable {
 							output.write(buf, 0, bytesRead);
 						}
 					} finally {
-						input.close();
-						output.close();
+						if(input != null){
+							input.close();
+						}
+						if(output != null){
+							output.close();
+						}
+						
 					}
 					file.add(f);
-					System.out.println(file);
+//					System.out.println(file);
 					list.add(reqList.get(i));
 					map.put(reqList.get(i), f);
+				//	System.out.println("list of the files received "+ file);
+					System.out.println("list of the chunks received "+ list);
 				}
 //       			break;
        			if(list.size() == listsize){
@@ -153,7 +177,8 @@ public class Client implements Runnable {
 //       			 break;
 //       			System.out.println((String) in.readObject());
 //       			System.out.println((String) in.readObject());
-       			}	
+//       			}
+//       		}
        		}catch (EOFException e) {
 				   System.out.println("EOF is reached ");
        		}catch (InterruptedException e) {
@@ -175,14 +200,31 @@ public class Client implements Runnable {
 	}
 	finally {
 		try {
-			//requestSocket.close();
-			in.close();
-			out.close();
+			
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			if ( in != null ){
+				in.close();
+			}
+			if ( out != null ){
+				out.close();
+			}
+			if ( requestSocket != null ){
+				requestSocket.close(); 
+			}
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	  
+}	  // end while loop 
 	  
 }		
 
@@ -209,7 +251,7 @@ public class Client implements Runnable {
 
 			for (int i = no - 1; i < listsize; i = i + 5) {
 				File f1 = (File) in.readObject();
-				System.out.println("Received Chunk" + i);
+				System.out.println("Received Chunk" + (i+1));
 
 				File f = new File(
 						"/Users/bishalgautam/Desktop/test/" + no + "/" + name + "." + String.format("%03d", i + 1));
@@ -233,9 +275,10 @@ public class Client implements Runnable {
 					}
 				}
 				map.put(i+1,f);
+				System.out.println("map :"+ map.get(i+1));
 				file.add(f);
 				list.add(i+1);
-				System.out.println("list of the files received "+ file);
+				//System.out.println("list of the files received "+ file);
 				System.out.println("list of the chunks received "+ list);
 			}
 
@@ -271,7 +314,7 @@ public class Client implements Runnable {
 	
 	public  synchronized void stop(){
 		this.isStopped = true;
-		
+		this.downloadcomplete = true;
 		System.out.println("Download complete Starting to Merge the Files .......");
 		try{
 			this.MergeChunks();
@@ -295,7 +338,7 @@ public class Client implements Runnable {
 		try {
 			out.writeObject(msg);
 			out.flush();
-			 System.out.println("Send message from client with PeerID ="+ serverPort +","+ msg +  "to server at : "+ downloadNeighbour );
+			 System.out.println("Send message from client @ "+ serverPort + ":" +  msg +  "to server @ "+ downloadNeighbour );
 		} catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
@@ -306,7 +349,7 @@ public class Client implements Runnable {
 			out.writeObject(f);
 			out.flush();
 			// System.out.println("Send file " +fileList.indexOf(f)+ " to
-			// Client " + peerID);
+			 System.out.println("Send file from client @ "+ serverPort + ":" +  f +  "to server @ "+ downloadNeighbour );
 		} catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
@@ -346,11 +389,16 @@ public class Client implements Runnable {
 		in.close();
 
 		Client client = new Client(port);
-		new Thread(client, "client0000").start();
+		Thread t = new Thread(client, "client0000");
+		t.start();
+		
+				
+				
 		
 		try {
 //            System.out.println("Sleeping...");
             Thread.sleep(6*10000); //60 sec to  transfer data 
+         //   t.join();
 //            System.out.println("Done sleeping, no interrupt.");
         } catch (InterruptedException e) {
 //            System.out.println("I was interrupted!");
@@ -414,7 +462,8 @@ public class Client implements Runnable {
 				
 				
 			try {
-				while(true){
+//				while(true){
+					
 					
 					sendMessage(""+list.size());
 					sendList(list); 
@@ -426,23 +475,27 @@ public class Client implements Runnable {
 						reqList.add(Integer.parseInt((String) in.readObject()));
 					}
 				
+//					if(reqList.size() != 0){
+//						
+					System.out.println("size : "+reqList.size());
+					
 					for(int j : reqList){
-						sendFile(map.get(j));
-					}
-					
-					if(reqList.size() == 0){
-						break;
-					}
-					
+							sendFile(map.get(j));
+						}
+//					}
+//					
+					if(reqList.isEmpty() && list.size() == listsize){
+						uploadcomplete = true;
+					}	
 					reqList.clear();			
-				   }
+//				   }
 				} catch (EOFException e) {
-				   System.out.println("EOF is reached ");
+				   System.out.println("EOF is reached  at uploadhandler");
 				}	catch (Exception e) {
 					throw new RuntimeException("fileList is missing", e);
 				}
 			} catch (IOException ioException) {
-				System.out.println("Disconnect with Client " + peerID);
+				System.out.println("Disconnect with Client " + uploadNeighbour);
 			} finally {
 				// Close connections
 				try {
@@ -465,6 +518,10 @@ public class Client implements Runnable {
 					if (connection != null) {
 						connection.close();
 					}
+					if(serverSocket != null){
+						serverSocket.close();
+					}
+						
 				} catch (IOException ioException) {
 					System.out.println("Disconnect with Client " + peerID);
 				}
@@ -484,7 +541,7 @@ public class Client implements Runnable {
 			try {
 				out.writeObject(msg);
 				out.flush();
-				 System.out.println("Send message from server: " + msg + "to Client " + peerID);
+				 System.out.println("Send message from server @ "+ peerID + " : " + msg + "to Client " + uploadNeighbour);
 			} catch (IOException ioException) {
 				ioException.printStackTrace();
 			}
@@ -494,7 +551,7 @@ public class Client implements Runnable {
 			try {
 				out.writeObject(f);
 				out.flush();
-				 System.out.println("Send file to "  );
+				 System.out.println("Send file from server @ "+ peerID + " : " + f + " to Client " + uploadNeighbour );
 				// Client " + peerID);
 			} catch (IOException ioException) {
 				ioException.printStackTrace();

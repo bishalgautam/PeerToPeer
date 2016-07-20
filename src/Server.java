@@ -117,13 +117,15 @@ public class Server implements Runnable{
 		 splitFile(file );
 		 readfile.close();
 		 
-		   new Thread(server, "serverthread").start();
+		  Thread t = new Thread(server, "serverthread");
+				  t.start();
 				  
 		 
 		  // wait for the first chunks to be distributed to the clients
 		 try {
 //	            System.out.println("Sleeping...");
-	            Thread.sleep(2*10000); //90 sec to  transfer data 
+			 
+	            Thread.sleep(9*10000); //90 sec to type and initiate 5 clients
 //	            System.out.println("Done sleeping, no interrupt.");
 	        } catch (InterruptedException e) {
 //	            System.out.println("I was interrupted!");
@@ -135,17 +137,18 @@ public class Server implements Runnable{
 			  readfile.close();
 		 }
 		// server.runningThread.join();
-		 
+	   //	t.join();
 		System.out.println("server is stopping");
 	     server.stop();
        // ServerSocket listener = new ServerSocket(8000);
-		 
+	 	  
+	 	
     	}
 	
 	public void createNeighbour() throws IOException{
 		
-		// File configFile = new File("config.txt");
-	     File configFile = new File("src/config.txt"); // when using eclipse
+		 File configFile = new File("config.txt");
+	   //  File configFile = new File("src/config.txt"); // when using eclipse
 		 BufferedReader in = new BufferedReader(new FileReader(configFile));
 
 		 try{
