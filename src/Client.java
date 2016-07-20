@@ -76,8 +76,9 @@ public class Client implements Runnable {
 	
 	while( !this.downloadcomplete || !this.uploadcomplete ){
 		
-//	}
+//	}          
 	  try {
+		  if(!this.uploadcomplete){
 		      Thread.sleep(10000-serverPort);
 //		  	while(true) {
     			// accept the connection at user provided port no.
@@ -85,7 +86,7 @@ public class Client implements Runnable {
 		  			System.out.println("Intializing the uploadhander");
 		  				
 		  			t =	new Thread (new UploadHandler(serverPort));
-		  			    t.start();
+		  			t.start();
 		  				
 //		  			} catch (SocketTimeoutException  e ) {
 //						// TODO Auto-generated catch block
@@ -94,12 +95,17 @@ public class Client implements Runnable {
 //					// TODO Auto-generated catch block
 //		  				e.printStackTrace();
 //				}
-//    		
-	    	   if(this.downloadcomplete){
-	    		   continue;
-	    	   }
+    		}
+//	    	   if(this.downloadcomplete){
+//	    		   t.join();
+//	    		   continue;
+//    	   }
 		  	
 	      try {
+	    	  
+	    	  if(!this.downloadcomplete){
+	    		  
+//	    	  }
        			System.out.println("second try block client's thread");
        			this.connectDownloadNeighbour();
        			out = new ObjectOutputStream(requestSocket.getOutputStream());
@@ -171,6 +177,8 @@ public class Client implements Runnable {
 					System.out.println("list of the chunks received "+ list);
 				}
 //       			break;
+       			sendMessage(""+list.size());
+       			
        			if(list.size() == listsize){
        					this.stop();
        			}
@@ -178,7 +186,7 @@ public class Client implements Runnable {
 //       			System.out.println((String) in.readObject());
 //       			System.out.println((String) in.readObject());
 //       			}
-//       		}
+       	}
        		}catch (EOFException e) {
 				   System.out.println("EOF is reached ");
        		}catch (InterruptedException e) {
@@ -315,6 +323,7 @@ public class Client implements Runnable {
 	public  synchronized void stop(){
 		this.isStopped = true;
 		this.downloadcomplete = true;
+		
 		System.out.println("Download complete Starting to Merge the Files .......");
 		try{
 			this.MergeChunks();
@@ -427,7 +436,7 @@ public class Client implements Runnable {
 		public void openPeerServerPort() {
 			try {
 				this.serverSocket = new ServerSocket(peerID);
-//				this.serverSocket.setSoTimeout(4000);
+				this.serverSocket.setSoTimeout(4000);
 				System.out.println("Server started at " + peerID);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -447,7 +456,11 @@ public class Client implements Runnable {
 			
 			try {
 				this.connection = serverSocket.accept();
-			} catch (IOException e1) {
+				
+			} catch (SocketTimeoutException  e ) {
+				// TODO Auto-generated catch block
+				System.out.println("Timed out after 20sec");
+			}catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
@@ -484,8 +497,12 @@ public class Client implements Runnable {
 						}
 //					}
 //					
-					if(reqList.isEmpty() && list.size() == listsize){
+					int clistsize = Integer.parseInt((String) in.readObject());
+					
+					if(reqList.isEmpty() && clistsize == listsize){
 						uploadcomplete = true;
+					System.out.println("uploadcomplete:"+ uploadcomplete);	
+					
 					}	
 					reqList.clear();			
 //				   }
