@@ -436,7 +436,7 @@ public class Client implements Runnable {
 		public void openPeerServerPort() {
 			try {
 				this.serverSocket = new ServerSocket(peerID);
-				this.serverSocket.setSoTimeout(4000);
+				this.serverSocket.setSoTimeout(20000);
 				System.out.println("Server started at " + peerID);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -499,11 +499,14 @@ public class Client implements Runnable {
 //					
 					int clistsize = Integer.parseInt((String) in.readObject());
 					
-					if(reqList.isEmpty() && clistsize == listsize){
+//					if(reqList.size() == 0 && clistsize == listsize){
+					
+					if(clistsize == listsize){
 						uploadcomplete = true;
 					System.out.println("uploadcomplete:"+ uploadcomplete);	
+					 //   this.stop();
+					}
 					
-					}	
 					reqList.clear();			
 //				   }
 				} catch (EOFException e) {
@@ -546,6 +549,12 @@ public class Client implements Runnable {
 			
 		}
 		
+		// to show we are stopping 
+		 public void stop(){
+			 System.out.println("Upload and Download Completed.......");
+			 System.out.println("Stopping the transfers ............");
+		 }
+		 
 		//To send ArrayList to the outputStream 
 			public void sendList(List<Integer> list){
 					for(int j = 0; j < list.size(); j++){
