@@ -33,22 +33,7 @@ public class Server implements Runnable{
 	
 	public synchronized void stop() {
         this.stopped = true;
-//        try {
-//			Thread.sleep(3*10000);
-//		} catch (InterruptedException e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		}
-//        try {
-//        	if(this.listener != null && !this.listener.isClosed()){
-//                this.listener.close();
-//                }
-//            } catch (IOException e) {
-//            	e.printStackTrace(System.err);
-//               // throw new RuntimeException("Error closing server", e);
-//            }
-//        this.runningThread.interrupt(); 
-        
+
 	}  
 	
 	
@@ -136,12 +121,10 @@ public class Server implements Runnable{
 		 if (readfile != null ){
 			  readfile.close();
 		 }
-		// server.runningThread.join();
-	   //	t.join();
+		
 		System.out.println("server is stopping");
 	     server.stop();
-       // ServerSocket listener = new ServerSocket(8000);
-	 	  
+  
 	 	
     	}
 	

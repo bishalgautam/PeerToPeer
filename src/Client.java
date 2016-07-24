@@ -30,17 +30,6 @@ public class Client implements Runnable {
 
 	}
 
-//	public void openPeerServerPort() {
-//		try {
-//			this.serverSocket = new ServerSocket(serverPort);
-////			this.serverSocket.setSoTimeout(4000);
-//			System.out.println("Server started at " + serverPort);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			throw new RuntimeException("Server not opened at :" + serverPort, e);
-//		}
-//
-//	}
 
 	public void connectDownloadNeighbour() throws InterruptedException {
 		while (true) {
@@ -61,46 +50,23 @@ public class Client implements Runnable {
 		
 
 		this.getChunkServer();
-
-//		this.openPeerServerPort();
-
-		
-		
-  
-//		try {
-//			new UploadHandler(serverSocket.accept(), serverPort).start();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	
 	while( !this.downloadcomplete || !this.uploadcomplete ){
 		
-//	}          
+         
 	  try {
 		  if(!this.uploadcomplete){
 		      Thread.sleep(10000-serverPort);
-//		  	while(true) {
+
     			// accept the connection at user provided port no.
-//		  			try {
+
 		  			System.out.println("Intializing the uploadhander");
 		  				
 		  			t =	new Thread (new UploadHandler(serverPort));
 		  			t.start();
 		  				
-//		  			} catch (SocketTimeoutException  e ) {
-//						// TODO Auto-generated catch block
-//						System.out.println("Timed out after 20sec");
-//		  			} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//		  				e.printStackTrace();
-//				}
     		}
-//	    	   if(this.downloadcomplete){
-//	    		   t.join();
-//	    		   continue;
-//    	   }
-		  	
+
 	      try {
 	    	  
 	    	  if(!this.downloadcomplete){
@@ -111,11 +77,7 @@ public class Client implements Runnable {
        			out = new ObjectOutputStream(requestSocket.getOutputStream());
        			out.flush();
        			in = new ObjectInputStream(requestSocket.getInputStream());
-       			
- //      			while(!isStopped){
-       			// get the size of the list of chunks  download neighbor has 
-      // 			if (in.available() > 0){
-       				// prevent the EOF 
+ 
        			int size =  Integer.parseInt((String) in.readObject());
        			
        			List<Integer> dnList = new ArrayList<Integer>();
@@ -135,11 +97,6 @@ public class Client implements Runnable {
        			
        			sendMessage(""+reqList.size());
        			sendList(reqList);
-       			
-//       			if(reqList.size() != 0){
-//       				sendList(reqList);	
-//       			}
-       			
        			
        			
        			// Receive the chunks from download neighbor according to the reqList 
@@ -182,10 +139,7 @@ public class Client implements Runnable {
        			if(list.size() == listsize){
        					this.stop();
        			}
-//       			 break;
-//       			System.out.println((String) in.readObject());
-//       			System.out.println((String) in.readObject());
-//       			}
+
        	}
        		}catch (EOFException e) {
 				   System.out.println("EOF is reached ");
@@ -504,7 +458,7 @@ public class Client implements Runnable {
 					if(clistsize == listsize){
 						uploadcomplete = true;
 					System.out.println("uploadcomplete:"+ uploadcomplete);	
-					 //   this.stop();
+					    this.stop();
 					}
 					
 					reqList.clear();			
@@ -520,14 +474,6 @@ public class Client implements Runnable {
 				// Close connections
 				try {
 					
-//					try {
-////			            System.out.println("Sleeping...");
-//			            Thread.sleep(6*1000); //6 sec to  transfer data 
-////			            System.out.println("Done sleeping, no interrupt.");
-//			        } catch (InterruptedException e) {
-////			            System.out.println("I was interrupted!");
-//			            e.printStackTrace();
-//			        }
 							
 					if (in != null) {
 						in.close();
