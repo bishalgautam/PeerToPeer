@@ -103,8 +103,9 @@ public class Server implements Runnable{
 		 readfile.close();
 		 
 		  Thread t = new Thread(server, "serverthread");
-				  t.start();
-				  
+		  t.start();
+		 
+	
 		 
 		  // wait for the first chunks to be distributed to the clients
 		 try {

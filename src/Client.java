@@ -187,6 +187,9 @@ public class Client implements Runnable {
 	}
 	  
 }	  // end while loop 
+	
+	 System.out.println("Upload and Download Completed.......");
+	 System.out.println("Stopping the transfers ............");
 	  
 }		
 
@@ -355,18 +358,14 @@ public class Client implements Runnable {
 		Thread t = new Thread(client, "client0000");
 		t.start();
 		
+		 try {
+			t.join();
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}		
 				
-				
-		
-		try {
-//            System.out.println("Sleeping...");
-            Thread.sleep(6*10000); //60 sec to  transfer data 
-         //   t.join();
-//            System.out.println("Done sleeping, no interrupt.");
-        } catch (InterruptedException e) {
-//            System.out.println("I was interrupted!");
-            e.printStackTrace();
-        }
+
 
 	}
 
@@ -458,7 +457,7 @@ public class Client implements Runnable {
 					if(clistsize == listsize){
 						uploadcomplete = true;
 					System.out.println("uploadcomplete:"+ uploadcomplete);	
-					    this.stop();
+					   // this.stop();
 					}
 					
 					reqList.clear();			
